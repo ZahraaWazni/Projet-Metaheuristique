@@ -9,7 +9,7 @@ public class LaCrepeVoyageuse extends CompetitorProject {
 
     private Path currentSolution;
     private double temperature;
-    private final double COOLING_RATE = 0.995;
+    private final double COOLING_RATE = 1 - (0.1/problem.getLength());
     private final double INITIAL_TEMP = 2000;                           // i think thi is the best value for the initial temperature
 
     // setting up the constructor
@@ -32,6 +32,7 @@ public class LaCrepeVoyageuse extends CompetitorProject {
 
     @Override
     public void loop() {
+        if (Thread.currentThread().isInterrupted()) return;
 
         // Generate neighbor solution (small perturbation)
         Path newSolution = generateNeighbor(currentSolution);
@@ -49,7 +50,7 @@ public class LaCrepeVoyageuse extends CompetitorProject {
 
         // Periodically apply 2-Opt optimization (every ~100 iterations)
         if (Math.random() < 0.01) {
-            currentSolution = twoOptOptimize(currentSolution);
+            currentSolution = twoOptOptimize(currentSolution, 50);
             evaluation.evaluate(currentSolution);
         }
 
@@ -81,14 +82,15 @@ public class LaCrepeVoyageuse extends CompetitorProject {
     }
 
     // method that applies the 2-opt optimization to a path
-    private Path twoOptOptimize(Path path) {
+    private Path twoOptOptimize(Path path, long maxMillis) {
+        long startTime = System.currentTimeMillis();
         int[] currentPath = path.getCopyPath();
         boolean improved = true;
 
-        while (improved) {
+        while (improved && !Thread.currentThread().isInterrupted() && System.currentTimeMillis() - startTime < maxMillis) {
             improved = false;
-            for (int i = 0; i < currentPath.length - 1; i++) {
-                for (int j = i + 2; j < currentPath.length; j++) {
+            for (int i = 0; i < currentPath.length - 1 && !Thread.currentThread().isInterrupted(); i++) {
+                for (int j = i + 2; j < currentPath.length && !Thread.currentThread().isInterrupted(); j++) {
                     double before = calculateSegmentLength(currentPath, i, j);
                     // Perform 2-opt swap
                     reverseArraySegment(currentPath, i + 1, j);
