@@ -41,14 +41,14 @@ public final class Main extends OutputWriter
 	private static final int AWAIT = 1;
 //	private static final int NB_RUNS = 100;
 	private static final int NB_RUNS = 1;
-	private static final int NB_SECONDS = 10;
+	private static final int NB_SECONDS = 1;
 	static final boolean DISPLAY_CHART = true;
 //	static final boolean DISPLAY_CHART = false;
 	static final boolean DISPLAY_STD_OUT = true;
 //	static final boolean DISPLAY_STD_OUT = false;
 //	static final boolean COMPETITION = true;
 	static final boolean COMPETITION = false;
-	
+
 	/**
 	 * @return Retourne l'instance de Main
 	 */
@@ -58,11 +58,11 @@ public final class Main extends OutputWriter
 			Main.instance = new Main ();
 		return Main.instance;
 	}
-	
+
 	private Main ()
 	{
 	}
-	
+
 	private static Solution run (Class <?> subClass, Problem problem) throws InterruptedException, ExecutionException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, SecurityException
 	{
 		Evaluation evaluation = new Evaluation (problem);
@@ -74,7 +74,7 @@ public final class Main extends OutputWriter
 		{
 			if (!Main.DISPLAY_STD_OUT)
 			{
-				PrintStream stream = new PrintStream (new OutputStream () {@Override public void write (int b) throws IOException {}}); 
+				PrintStream stream = new PrintStream (new OutputStream () {@Override public void write (int b) throws IOException {}});
 				System.setOut (stream);
 			}
 			future.get (Main.NB_SECONDS, TimeUnit.SECONDS);
@@ -93,7 +93,7 @@ public final class Main extends OutputWriter
 		}
 		return solution;
 	}
-	
+
 	/**
 	 * @param subClass La classe du projet à évaluer
 	 * @param problem Le problème TSP à résoudre
@@ -116,7 +116,7 @@ public final class Main extends OutputWriter
 					boolean isFinal = java.lang.reflect.Modifier.isFinal (fields [j].getModifiers());
 					if (isStatic && !isFinal)
 					{
-						
+
 						fields [j].setAccessible (true);
 						Class<?> type = fields [j].getType ();
 						if (type == boolean.class)
@@ -148,7 +148,7 @@ public final class Main extends OutputWriter
 		System.setOut (out);
 		return new Solution (solutions);
 	}
-	
+
 	private void launch ()
 	{
 		this.println ("Évaluation des projets");
