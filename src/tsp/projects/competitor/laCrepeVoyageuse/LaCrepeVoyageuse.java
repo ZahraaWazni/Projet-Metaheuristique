@@ -10,7 +10,7 @@ public class LaCrepeVoyageuse extends CompetitorProject {
     private Path currentSolution;
     private double temperature;
     private final double COOLING_RATE = 0.995;
-    private final double INITIAL_TEMP = 10000;
+    private final double INITIAL_TEMP = 2000;                           // i think thi is the best value for the initial temperature
 
     // setting up the constructor
     public LaCrepeVoyageuse(Evaluation evaluation) throws InvalidProjectException {
