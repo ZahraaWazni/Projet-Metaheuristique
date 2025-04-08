@@ -20,7 +20,7 @@ public class Greedy extends DemoProject
 
 	/**
 	 * Méthode d'évaluation de la solution
-	 * @param evaluation 
+	 * @param evaluation
 	 * @throws InvalidProjectException
 	 */
 	public Greedy (Evaluation evaluation) throws InvalidProjectException
