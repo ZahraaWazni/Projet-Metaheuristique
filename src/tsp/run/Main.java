@@ -40,8 +40,8 @@ public final class Main extends OutputWriter
 	private static final String LOG_FILE = "tsp.log";
 	private static final int AWAIT = 1;
 //	private static final int NB_RUNS = 100;
-	private static final int NB_RUNS = 1;
-	private static final int NB_SECONDS = 3;
+	private static final int NB_RUNS = 2;
+	private static final int NB_SECONDS = 10;
 	static final boolean DISPLAY_CHART = true;
 //	static final boolean DISPLAY_CHART = false;
 	static final boolean DISPLAY_STD_OUT = true;

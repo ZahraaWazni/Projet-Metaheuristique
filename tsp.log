@@ -1,18 +1,28 @@
 Évaluation des projets
-1 exécution
-3 secondes
-2 projets
+2 exécutions
+10 secondes
+4 projets
 3 problèmes
 
 tsp.projects.competitor.laCrepeVoyageuse.LaCrepeVoyageuse
-D:\zahra\Master_Organized\part2\Projet-Metaheuristique\data\bier127	215383.05574180553
-D:\zahra\Master_Organized\part2\Projet-Metaheuristique\data\gr666  	56168.11203876193
-D:\zahra\Master_Organized\part2\Projet-Metaheuristique\data\pr2048 	1363989.522227996
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\bier127	163315.41106796448
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\gr666  	4990.644103356382
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\pr2048 	10339.179486646783
+
+tsp.projects.demo.randomsearch.RandomSearch
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\bier127	550671.9377363208
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\gr666  	55021.523390685514
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\pr2048 	1336128.8159733159
+
+tsp.projects.demo.hillclimbing.HillClimbing
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\bier127	596660.3296280853
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\gr666  	57895.64263617361
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\pr2048 	1384447.6519467356
 
 tsp.projects.demo.greedy.Greedy
-D:\zahra\Master_Organized\part2\Projet-Metaheuristique\data\bier127	133970.64577239772
-D:\zahra\Master_Organized\part2\Projet-Metaheuristique\data\gr666  	3838.1572497048737
-D:\zahra\Master_Organized\part2\Projet-Metaheuristique\data\pr2048 	5116.0
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\bier127	133970.64577239772
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\gr666  	3835.215131467921
+D:\zahra\Master_Organized\part2\metaStochastique\Projet-Metaheuristique\data\pr2048 	5116.0
 
 Projet Greedy
 Alexandre Blansché
@@ -20,6 +30,14 @@ Alexandre Blansché
 
 Projet La Crêpe Voyageuse
 Zahraa WAZNI
-Antoine FEISTHAUER 
-Évaluation: 9328.477272402093
+Antoine FEISTHAUER
+Évaluation: 51.375232967549415
+
+Projet Random Search
+Alexandre Blansché
+Évaluation: 9220.782884472717
+
+Projet Hill Climbing
+Alexandre Blansché
+Évaluation: 9572.027077486508
 

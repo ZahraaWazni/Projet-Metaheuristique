@@ -1,131 +1,258 @@
 package tsp.projects.competitor.laCrepeVoyageuse;
 import tsp.evaluation.Evaluation;
 import tsp.evaluation.Path;
-import tsp.evaluation.Coordinates;
 import tsp.projects.CompetitorProject;
 import tsp.projects.InvalidProjectException;
 
+import java.util.Random;
+
 public class LaCrepeVoyageuse extends CompetitorProject {
 
-    private Path currentSolution;
-    private double temperature;
-    private final double COOLING_RATE = 1 - (0.1/problem.getLength());
-    private final double INITIAL_TEMP = 2000;                           // i think thi is the best value for the initial temperature
+    // ACO Parameters
+    private double[][] pheromones;
+    private double[][] heuristicMatrix;
+    private double[][] distanceMatrix;
+    private double alpha = 1.0;
+    private double beta = 3.0;
+    private double evaporation = 0.4;
+    private double Q = 200;
+    private int numAnts;
+    private Random random = new Random();
 
-    // setting up the constructor
+    // Adaptive parameters
+    private double minPheromone = 0.001;
+    private double maxPheromone = 10.0;
+    private int stagnationCounter = 0;
+    private final int MAX_STAGNATION = 30;
+    private double bestDistance = Double.MAX_VALUE;
+
+    // Local search parameters
+    private final boolean USE_2OPT = false;
+    private final int TWO_OPT_FREQUENCY = 5;
+
     public LaCrepeVoyageuse(Evaluation evaluation) throws InvalidProjectException {
-        super(evaluation);                                                  // Call the constructor of the parent class to initialize the bot
-        setMethodName("La Crêpe Voyageuse");                                // The name of our bot
-        setAuthors("Zahraa WAZNI", "Antoine FEISTHAUER ");
+        super(evaluation);
+        setMethodName("La Crêpe Voyageuse");
+        setAuthors("Zahraa WAZNI", "Antoine FEISTHAUER");
     }
-
 
     @Override
     public void initialization() {
-        // We will implement the Simulated Annealing algorithm here
-        currentSolution = new Path(problem.getLength());                    // Initialize the solution with a random path : get number of cities
-        evaluation.evaluate(currentSolution);                               // Evaluate the solution to get the cost
+        // Nombre de villes
+        int n = problem.getLength();
 
-        // 2. Initialize SA parameters
-        temperature = INITIAL_TEMP;                                                 // Adjust based on problem scale
+        // Nombre de fourmis limité à 50 max car sinon trop long
+        numAnts = Math.min(50, n);
+
+        // Initialisation de la matrice des distances entre villes qui va servir à la construction de la solution
+        distanceMatrix = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                distanceMatrix[i][j] = problem.getCoordinates(i).distance(problem.getCoordinates(j));
+            }
+        }
+
+        // Matrice heuristique (1 / distance) permettra de favoriser les villes proches
+        heuristicMatrix = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                heuristicMatrix[i][j] = 1.0 / Math.max(1, distanceMatrix[i][j]);
+            }
+        }
+
+        // Initialisation des phéromones avec une valeur basée sur le voisin le plus proche
+        double initialPheromone = 1.0 / (n * calculateNearestNeighborDistance());
+        pheromones = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                pheromones[i][j] = i == j ? 0 : initialPheromone;
+            }
+        }
     }
 
     @Override
     public void loop() {
-        if (Thread.currentThread().isInterrupted()) return;
+        int n = problem.getLength();
+        Path bestIterationPath = null;
+        double bestIterationDistance = Double.MAX_VALUE;
 
-        // Generate neighbor solution (small perturbation)
-        Path newSolution = generateNeighbor(currentSolution);
+        // Step 1: Each ant builds a tour
+        for (int k = 0; k < numAnts; k++) {
+            Path path = buildAntPath(k);
 
-        // Evaluate both solutions
-        double currentEnergy = evaluation.quickEvaluate(currentSolution);
-        double newEnergy = evaluation.quickEvaluate(newSolution);
-        double delta = newEnergy - currentEnergy;
+            // Apply local search occasionally
+            if (USE_2OPT && k % TWO_OPT_FREQUENCY == 0) {
+                path = apply2Opt(path);
+            }
 
-        // Simulated Annealing acceptance
-        if (acceptSolution(delta, temperature)) {
-            currentSolution = newSolution;
-            evaluation.evaluate(currentSolution); // Updates best solution if improved
+            double distance = evaluation.evaluate(path);
+
+            // Track best iteration solution
+            if (distance < bestIterationDistance) {
+                bestIterationDistance = distance;
+                bestIterationPath = path;
+            }
         }
 
-        // Periodically apply 2-Opt optimization (every ~100 iterations)
-        if (Math.random() < 0.01) {
-            currentSolution = twoOptOptimize(currentSolution, 50);
-            evaluation.evaluate(currentSolution);
+        // Step 2: Update pheromones
+        evaporatePheromones();
+
+        // Deposit pheromones for best iteration path (elitist strategy)
+        if (bestIterationPath != null) {
+            depositPheromones(bestIterationPath, bestIterationDistance);
+
+            // Adaptive parameter adjustment
+            if (bestIterationDistance < bestDistance) {
+                bestDistance = bestIterationDistance;
+                stagnationCounter = 0;
+            } else {
+                stagnationCounter++;
+                if (stagnationCounter > MAX_STAGNATION) {
+                    adjustParameters();
+                    stagnationCounter = 0;
+                }
+            }
+        }
+    }
+    // methode pour construire le chemin de la fourmi a partir de la matrice des phéromones
+    private Path buildAntPath(int antIndex) {
+        int n = problem.getLength();
+        boolean[] visited = new boolean[n];
+        int[] path = new int[n];
+
+        // Point de départ différent pour chaque fourmi
+        int startCity = antIndex % n;
+        int currentCity = startCity;
+        path[0] = currentCity;
+        visited[currentCity] = true;
+
+        // Construction du chemin
+        for (int i = 1; i < n; i++) {
+            int nextCity = selectNextCity(currentCity, visited);
+            path[i] = nextCity;
+            visited[nextCity] = true;
+            currentCity = nextCity;
         }
 
-        // Cool down temperature
-        temperature *= COOLING_RATE;
-    }
-    // Helper Methods --------------------------------------------------------
-
-    // method that generates a neighbor solution by swapping two random cities
-    private Path generateNeighbor(Path path) {
-        // Create a small perturbation (swap two random cities)
-        int[] newPath = path.getCopyPath();
-        int i = (int) (Math.random() * newPath.length);
-        int j = (int) (Math.random() * newPath.length);
-
-        // Swap cities
-        int temp = newPath[i];
-        newPath[i] = newPath[j];
-        newPath[j] = temp;
-
-        return new Path(newPath);
-    }
-    // method that accepts a new solution based on the temperature and the energy difference
-    private boolean acceptSolution(double delta, double temp) {
-        // Always accept better solutions
-        if (delta < 0) return true;
-        // Sometimes accept worse solutions (based on temperature)
-        return Math.exp(-delta / temp) > Math.random();
+        return new Path(path);
     }
 
-    // method that applies the 2-opt optimization to a path
-    private Path twoOptOptimize(Path path, long maxMillis) {
-        long startTime = System.currentTimeMillis();
-        int[] currentPath = path.getCopyPath();
+    // methode pour choisir la prochaine ville a partir de la matrice des phéromones
+    private int selectNextCity(int currentCity, boolean[] visited) {
+        int n = problem.getLength();
+        double sum = 0.0;
+        double[] probabilities = new double[n];
+
+        // Calcul des probabilités basées sur les phéromones et l'heuristique
+        for (int i = 0; i < n; i++) {
+            if (!visited[i]) {
+                probabilities[i] = Math.pow(pheromones[currentCity][i], alpha) *
+                        Math.pow(heuristicMatrix[currentCity][i], beta);
+                sum += probabilities[i];
+            }
+        }
+
+        // Sélection probabiliste
+        while (true) {
+            int candidate = random.nextInt(n);
+            if (!visited[candidate] && (sum == 0 || random.nextDouble() < probabilities[candidate] / sum)) {
+                return candidate;
+            }
+        }
+    }
+
+    // Evaporation of pheromones permet de diminuer la quantité de phéromones sur les arêtes
+    private void evaporatePheromones() {
+        int n = pheromones.length;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                pheromones[i][j] = Math.max(minPheromone, pheromones[i][j] * (1 - evaporation));
+            }
+        }
+    }
+
+    // Dépôt de phéromones sur les arêtes du chemin trouvé par la fourmi
+    private void depositPheromones(Path path, double distance) {
+        int[] tour = path.getPath();
+        double depositAmount = Q / distance;
+
+        for (int i = 0; i < tour.length; i++) {
+            int from = tour[i];
+            int to = tour[(i + 1) % tour.length];
+            pheromones[from][to] = Math.min(maxPheromone, pheromones[from][to] + depositAmount);
+            pheromones[to][from] = pheromones[from][to]; // symmetric TSP
+        }
+    }
+
+    // Calcul de la distance du voisin le plus proche pour initialiser les phéromones
+    private double calculateNearestNeighborDistance() {
+        int n = problem.getLength();
+        double total = 0;
+
+        for (int i = 0; i < n; i++) {
+            double minDist = Integer.MAX_VALUE;
+            for (int j = 0; j < n; j++) {
+                if (i != j && distanceMatrix[i][j] < minDist) {
+                    minDist = distanceMatrix[i][j];
+                }
+            }
+            total += minDist;
+        }
+
+        return total / n;
+    }
+
+    // Adjust parameters dynamically based on stagnation
+    private void adjustParameters() {
+        // Dynamically adjust parameters to escape local optima
+        evaporation = Math.min(0.5, evaporation * 1.1);
+        alpha = Math.max(0.5, alpha * 0.95);
+        beta = Math.min(5.0, beta * 1.05);
+    }
+//--------------------------------------------------------------------------------------------------------------------
+    // Local search using 2-opt pour optimiser le chemin, il faut que le paramètre USE_2OPT soit à true
+    private Path apply2Opt(Path path) {
+        int[] tour = path.getPath().clone();
+        int n = tour.length;
         boolean improved = true;
+        int maxIterations = 1000;
+        int iterations = 0;
 
-        while (improved && !Thread.currentThread().isInterrupted() && System.currentTimeMillis() - startTime < maxMillis) {
+        while (improved && iterations < maxIterations) {
             improved = false;
-            for (int i = 0; i < currentPath.length - 1 && !Thread.currentThread().isInterrupted(); i++) {
-                for (int j = i + 2; j < currentPath.length && !Thread.currentThread().isInterrupted(); j++) {
-                    double before = calculateSegmentLength(currentPath, i, j);
-                    // Perform 2-opt swap
-                    reverseArraySegment(currentPath, i + 1, j);
-                    double after = calculateSegmentLength(currentPath, i, j);
+            iterations++;
 
-                    if (after < before) {
+            for (int i = 0; i < n - 1; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    int a = tour[i];
+                    int b = tour[(i + 1) % n];
+                    int c = tour[j];
+                    int d = tour[(j + 1) % n];
+
+                    double currentDistance = distanceMatrix[a][b] + distanceMatrix[c][d];
+                    double newDistance = distanceMatrix[a][c] + distanceMatrix[b][d];
+
+                    if (newDistance < currentDistance) {
+                        reverseSubTour(tour, (i + 1) % n, j);
                         improved = true;
-                    } else {
-                        // Revert if no improvement
-                        reverseArraySegment(currentPath, i + 1, j);
                     }
                 }
             }
         }
-        return new Path(currentPath);
-    }
-    // method that calculates the length of a segment in a path
-    private double calculateSegmentLength(int[] path, int i, int j) {
-        // Calculate distance between city i and i+1 + city j-1 and j
-        Coordinates c1 = problem.getCoordinates(path[i]);
-        Coordinates c2 = problem.getCoordinates(path[i + 1]);
-        Coordinates c3 = problem.getCoordinates(path[j - 1]);
-        Coordinates c4 = problem.getCoordinates(path[j]);
 
-        return c1.distance(c2) + c3.distance(c4);
+        return new Path(tour);
     }
 
-    // method that reverses a segment in a path
-    private void reverseArraySegment(int[] array, int start, int end) {
-        while (start < end) {
-            int temp = array[start];
-            array[start] = array[end];
-            array[end] = temp;
-            start++;
-            end--;
+    // Reverse the sub-tour between two indices in the tour
+    private void reverseSubTour(int[] tour, int start, int end) {
+        int n = tour.length;
+        while (start != end && start != (end + 1) % n) {
+            int temp = tour[start];
+            tour[start] = tour[end];
+            tour[end] = temp;
+            start = (start + 1) % n;
+            if (start == end) break;
+            end = (end - 1 + n) % n;
         }
     }
 }
