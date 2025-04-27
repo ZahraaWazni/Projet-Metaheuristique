@@ -27,7 +27,7 @@ public class LaCrepeVoyageuse extends CompetitorProject {
     private double bestDistance = Double.MAX_VALUE;
 
     // Local search parameters
-    private final boolean USE_2OPT = false;
+    private final boolean USE_2OPT = true;
     private final int TWO_OPT_FREQUENCY = 5;
 
     public LaCrepeVoyageuse(Evaluation evaluation) throws InvalidProjectException {
